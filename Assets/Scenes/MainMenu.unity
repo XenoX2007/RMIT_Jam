@@ -1033,8 +1033,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abd48a87d24cd6e4c8160196f6bcc580, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonHoverScale
-  hoverScale: 1.12
-  speed: 12
 --- !u!114 &347651596
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2583,8 +2581,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 964780257}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1008.78033, y: 604.8567, z: -345.75555}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1008.7803, y: 604.8567, z: -345.75552}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2717,8 +2715,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abd48a87d24cd6e4c8160196f6bcc580, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonHoverScale
-  hoverScale: 1.12
-  speed: 12
 --- !u!114 &1090657646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4596,8 +4592,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abd48a87d24cd6e4c8160196f6bcc580, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonHoverScale
-  hoverScale: 1.12
-  speed: 12
 --- !u!114 &1560069854
 MonoBehaviour:
   m_ObjectHideFlags: 0
