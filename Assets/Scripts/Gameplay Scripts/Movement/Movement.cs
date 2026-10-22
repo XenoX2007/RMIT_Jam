@@ -7,6 +7,9 @@ public class Movement : MonoBehaviour
     [SerializeField] private float moveForce = 30f;
     [SerializeField] private float rotationSpeed = 5f;
 
+    [Header("Sprint")]
+    [SerializeField] private float sprintMultiplier = 1.8f;
+
     [Header("Camera Facing")]
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private InputActionReference rightClickAction;
@@ -24,6 +27,7 @@ public class Movement : MonoBehaviour
     [Header("Input Actions")]
     [SerializeField] private InputActionReference moveAction;
     [SerializeField] private InputActionReference jumpAction;
+    [SerializeField] private InputActionReference sprintAction;
 
     private Rigidbody rb;
     private bool isGrounded;
@@ -39,6 +43,7 @@ public class Movement : MonoBehaviour
         moveAction.action.Enable();
         jumpAction.action.Enable();
         rightClickAction.action.Enable();
+        sprintAction.action.Enable();
 
         moveAction.action.performed += OnMove;
         moveAction.action.canceled += OnMove;
@@ -56,6 +61,7 @@ public class Movement : MonoBehaviour
         moveAction.action.Disable();
         jumpAction.action.Disable();
         rightClickAction.action.Disable();
+        sprintAction.action.Disable();
     }
 
     private void OnMove(InputAction.CallbackContext context)
@@ -98,9 +104,13 @@ public class Movement : MonoBehaviour
 
         input.Normalize();
 
-        // Movement
+        // Movement (hold Shift = Sprint)
+        float speed = sprintAction.action.IsPressed()
+            ? moveForce * sprintMultiplier
+            : moveForce;
+
         rb.AddForce(
-            input * moveForce,
+            input * speed,
             ForceMode.Acceleration);
 
         // RMB = Face Camera Direction
