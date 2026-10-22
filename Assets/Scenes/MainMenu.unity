@@ -1034,8 +1034,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abd48a87d24cd6e4c8160196f6bcc580, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonHoverScale
-  hoverScale: 1.12
-  speed: 12
 --- !u!114 &347651596
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1865,7 +1863,7 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 8300000, guid: d7e96ea52352d454197fc8a1da05b4dd, type: 3}
+  m_Resource: {fileID: 8300000, guid: 397b93ef75a027e4786ae5d75e18b2d9, type: 3}
   m_PlayOnAwake: 1
   m_Volume: 1
   m_Pitch: 1
@@ -2415,7 +2413,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 962540757}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -2423,7 +2421,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 295, y: -105}
+  m_AnchoredPosition: {x: 295, y: -196}
   m_SizeDelta: {x: 200, y: 50}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &962540759
@@ -2446,9 +2444,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Too Old to
-
-    Die '
+  m_text: Crocodiles comes ashore
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2100000, guid: 8b29aaa3eec7468097ff07adfcf29ac9, type: 2}
@@ -2475,8 +2471,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 200
-  m_fontSizeBase: 200
+  m_fontSize: 160
+  m_fontSizeBase: 160
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -2669,8 +2665,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abd48a87d24cd6e4c8160196f6bcc580, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonHoverScale
-  hoverScale: 1.12
-  speed: 12
 --- !u!114 &1090657646
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4548,8 +4542,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: abd48a87d24cd6e4c8160196f6bcc580, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ButtonHoverScale
-  hoverScale: 1.12
-  speed: 12
 --- !u!114 &1560069854
 MonoBehaviour:
   m_ObjectHideFlags: 0
