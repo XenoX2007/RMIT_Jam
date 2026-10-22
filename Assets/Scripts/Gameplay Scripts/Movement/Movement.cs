@@ -1,11 +1,16 @@
 using UnityEngine;
-
+using UnityEngine.InputSystem;
 
 public class Movement : MonoBehaviour
 {
     [Header("Movement")]
     [SerializeField] private float moveForce = 30f;
     [SerializeField] private float rotationSpeed = 5f;
+
+    [Header("Camera Facing")]
+    [SerializeField] private Transform cameraTransform;
+    [SerializeField] private InputActionReference rightClickAction;
+    [SerializeField] private float cameraFacingSpeed = 15f;
 
     [Header("Stand Up")]
     [SerializeField] private float standUpSpeed = 2f;
@@ -16,12 +21,56 @@ public class Movement : MonoBehaviour
     [SerializeField] private float groundCheckRadius = 0.2f;
     [SerializeField] private LayerMask groundLayer;
 
+    [Header("Input Actions")]
+    [SerializeField] private InputActionReference moveAction;
+    [SerializeField] private InputActionReference jumpAction;
+
     private Rigidbody rb;
     private bool isGrounded;
+    private Vector2 moveInput;
 
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
+    }
+
+    private void OnEnable()
+    {
+        moveAction.action.Enable();
+        jumpAction.action.Enable();
+        rightClickAction.action.Enable();
+
+        moveAction.action.performed += OnMove;
+        moveAction.action.canceled += OnMove;
+
+        jumpAction.action.performed += OnJump;
+    }
+
+    private void OnDisable()
+    {
+        moveAction.action.performed -= OnMove;
+        moveAction.action.canceled -= OnMove;
+
+        jumpAction.action.performed -= OnJump;
+
+        moveAction.action.Disable();
+        jumpAction.action.Disable();
+        rightClickAction.action.Disable();
+    }
+
+    private void OnMove(InputAction.CallbackContext context)
+    {
+        moveInput = context.ReadValue<Vector2>();
+    }
+
+    private void OnJump(InputAction.CallbackContext context)
+    {
+        if (!isGrounded)
+            return;
+
+        rb.AddForce(
+            Vector3.up * jumpForce,
+            ForceMode.Impulse);
     }
 
     private void Update()
@@ -30,30 +79,47 @@ public class Movement : MonoBehaviour
             groundCheck.position,
             groundCheckRadius,
             groundLayer);
-
-        if (Input.GetKeyDown(KeyCode.Space) && isGrounded)
-        {
-            rb.AddForce(
-                Vector3.up * jumpForce,
-                ForceMode.Impulse);
-
-        }
     }
 
     private void FixedUpdate()
     {
-        float h = Input.GetAxisRaw("Horizontal");
-        float v = Input.GetAxisRaw("Vertical");
+        Vector3 cameraForward = cameraTransform.forward;
+        Vector3 cameraRight = cameraTransform.right;
 
-        Vector3 input = new Vector3(h, 0f, v).normalized;
+        cameraForward.y = 0f;
+        cameraRight.y = 0f;
+
+        cameraForward.Normalize();
+        cameraRight.Normalize();
+
+        Vector3 input =
+            cameraForward * moveInput.y +
+            cameraRight * moveInput.x;
+
+        input.Normalize();
 
         // Movement
         rb.AddForce(
             input * moveForce,
             ForceMode.Acceleration);
 
-        // Turn towards movement direction
-        if (input.magnitude > 0.1f)
+        // RMB = Face Camera Direction
+        if (rightClickAction.action.IsPressed())
+        {
+            if (cameraForward.sqrMagnitude > 0.01f)
+            {
+                Quaternion targetRotation =
+                    Quaternion.LookRotation(cameraForward);
+
+                rb.MoveRotation(
+                    Quaternion.Slerp(
+                        rb.rotation,
+                        targetRotation,
+                        cameraFacingSpeed * Time.fixedDeltaTime));
+            }
+        }
+        // Normal = Face Movement Direction
+        else if (input.magnitude > 0.1f)
         {
             Quaternion targetRotation =
                 Quaternion.LookRotation(input);
@@ -64,16 +130,21 @@ public class Movement : MonoBehaviour
                     targetRotation,
                     rotationSpeed * Time.fixedDeltaTime));
         }
+
+        // Extra Falling Force
         if (rb.linearVelocity.y < 0)
         {
-            rb.AddForce(Vector3.down * 20f, ForceMode.Acceleration);
+            rb.AddForce(
+                Vector3.down * 20f,
+                ForceMode.Acceleration);
         }
 
-        // Slowly return upright
-        Quaternion uprightRotation = Quaternion.Euler(
-            0f,
-            rb.rotation.eulerAngles.y,
-            0f);
+        // Stand Upright
+        Quaternion uprightRotation =
+            Quaternion.Euler(
+                0f,
+                rb.rotation.eulerAngles.y,
+                0f);
 
         rb.MoveRotation(
             Quaternion.Slerp(
