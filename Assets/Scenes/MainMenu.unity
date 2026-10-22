@@ -6252,7 +6252,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 643abcecce602ad409024cd3b78ec3bc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SceneChanger
-  gameScene1: BossFight
+  gameScene1: InGame
   gameScene2: CreditsScene
 --- !u!114 &2045668575
 MonoBehaviour:
