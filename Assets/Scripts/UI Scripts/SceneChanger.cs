@@ -3,7 +3,7 @@ using UnityEngine.SceneManagement;
 
 public class SceneChanger : MonoBehaviour
 {
-    [SerializeField] string gameScene1 = "Movement";
+    [SerializeField] string gameScene1 = "InGame";
     [SerializeField] string gameScene2 = "CreditsScene";
 
     public void PlayGame()
