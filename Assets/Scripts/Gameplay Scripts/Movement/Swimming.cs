@@ -13,12 +13,14 @@ public class Swimming : MonoBehaviour
     [SerializeField] private Renderer[] waterSurfaces;
     [Tooltip("How deep the feet must be under the surface to start swimming.")]
     [SerializeField] private float enterDepth = 1.1f;
-    [Tooltip("Back to walking when the feet are shallower than this.")]
+    [Tooltip("Back to walking when the water under the player is shallower than this.")]
     [SerializeField] private float exitDepth = 0.8f;
 
     [Header("Floating")]
     [Tooltip("How far the body centre sits under the surface while floating (head stays above).")]
     [SerializeField] private float floatDepth = 0.35f;
+    [Tooltip("Same while swimming. The swim animation lies flat, so the body rides higher to keep the head out.")]
+    [SerializeField] private float swimDepth = -0.3f;
     [SerializeField] private float buoyancy = 4f;
     [SerializeField] private float bobHeight = 0.08f;
     [SerializeField] private float bobSpeed = 1.6f;
@@ -81,8 +83,10 @@ public class Swimming : MonoBehaviour
         bool overWater = WaterLevel(out float level);
         float depth = overWater ? level - body.bounds.min.y : 0f;
 
+        // Leaving uses the real water depth under the player (surface to ground), not the feet,
+        // so floating higher for the swim pose never counts as reaching the shore
         if (!InWater && overWater && depth > enterDepth) EnterWater();
-        else if (InWater && (!overWater || depth < exitDepth)) ExitWater();
+        else if (InWater && (!overWater || level - GroundBelow() < exitDepth)) ExitWater();
 
         if (InWater) Swim(level);
     }
@@ -100,6 +104,14 @@ public class Swimming : MonoBehaviour
             return true;
         }
         return false;
+    }
+
+    private float GroundBelow()
+    {
+        // Starts inside the player's own collider, so the ray doesn't hit it
+        if (Physics.Raycast(rb.position, Vector3.down, out RaycastHit hit, 50f, ~0, QueryTriggerInteraction.Ignore))
+            return hit.point.y;
+        return float.NegativeInfinity;
     }
 
     private void EnterWater()
@@ -156,7 +168,7 @@ public class Swimming : MonoBehaviour
 
         // Vertical: spring to the float height with a gentle bob
         float bob = Mathf.Sin(Time.time * bobSpeed) * bobHeight;
-        float targetY = level - floatDepth + bob;
+        float targetY = level - (State == SwimState.Swimming ? swimDepth : floatDepth) + bob;
         float vertical = Mathf.Lerp(velocity.y, (targetY - rb.position.y) * buoyancy, 5f * Time.fixedDeltaTime);
         if (jumpQueued)
         {
