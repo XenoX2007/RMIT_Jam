@@ -14,6 +14,8 @@ public class Movement : MonoBehaviour
     [SerializeField] private Transform cameraTransform;
     [SerializeField] private InputActionReference rightClickAction;
     [SerializeField] private float cameraFacingSpeed = 15f;
+    [Tooltip("Off = Roblox style: RMB only moves the camera, the character keeps facing where it walks.")]
+    [SerializeField] private bool faceCameraWhileLooking = false;
 
     [Header("Stand Up")]
     [SerializeField] private float standUpSpeed = 2f;
@@ -114,7 +116,7 @@ public class Movement : MonoBehaviour
             ForceMode.Acceleration);
 
         // RMB = Face Camera Direction
-        if (rightClickAction.action.IsPressed())
+        if (faceCameraWhileLooking && rightClickAction.action.IsPressed())
         {
             if (cameraForward.sqrMagnitude > 0.01f)
             {
