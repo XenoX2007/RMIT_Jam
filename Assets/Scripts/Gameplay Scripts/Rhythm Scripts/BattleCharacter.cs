@@ -24,6 +24,13 @@ public class BattleCharacter : MonoBehaviour
     [Header("Defeat")]
     [SerializeField] float defeatDuration = 1f;
 
+    [Header("Animation (tùy chọn)")]
+    [Tooltip("Animator của model. Để trống nếu nhân vật không có animation.")]
+    [SerializeField] Animator animator;
+    [SerializeField] string screamState = "Scream";
+    [Tooltip("Đang hét chưa tới mốc này (0-1) thì không hét lại từ đầu, để miss liên tiếp không làm giật animation.")]
+    [SerializeField, Range(0f, 1f)] float screamRestartAfter = 0.5f;
+
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
     Renderer[] renderers;
@@ -70,6 +77,18 @@ public class BattleCharacter : MonoBehaviour
     {
         if (defeated) return;
         PlayAction(HurtRoutine());
+    }
+
+    // Boss hét (animation Scream) mỗi khi player bị trừ thanh
+    public void Scream()
+    {
+        if (defeated || animator == null) return;
+
+        AnimatorStateInfo state = animator.GetCurrentAnimatorStateInfo(0);
+        if (state.IsName(screamState) && state.normalizedTime < screamRestartAfter) return;
+        if (animator.IsInTransition(0) && animator.GetNextAnimatorStateInfo(0).IsName(screamState)) return;
+
+        animator.CrossFadeInFixedTime(screamState, 0.12f, 0, 0f);
     }
 
     public void Defeat()
