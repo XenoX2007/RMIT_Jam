@@ -11,6 +11,7 @@ public class Enemy : MonoBehaviour
     private GameObject player;
     private Vector3 lastKnowPos;
     private Coroutine hitStun;
+    private PlayerHealth playerHealth;
     public NavMeshAgent Agent { get => agent;}
     public GameObject Player {get => player;}
     public Vector3 LastKnowPos { get => lastKnowPos; set => lastKnowPos = value; }
@@ -34,6 +35,11 @@ public class Enemy : MonoBehaviour
     public int health;
     public float hitStunDuration = 0.5f; // match this to your hurt animation's length
 
+    [Header("Hit By Thrown Item")]
+    public float throwStunDuration = 4f;   // seconds frozen after being hit (knockback included)
+    public float knockbackDistance = 3f;
+    public float knockbackTime = 0.35f;
+
     public bool IsStunned { get; private set; }
     public bool IsDead { get; private set; }
 
@@ -50,6 +56,7 @@ public class Enemy : MonoBehaviour
         stateMachine = GetComponent<StateMachine>();
         agent = GetComponent<NavMeshAgent>();
         player = GameObject.FindGameObjectWithTag("Player");
+        if (player != null) playerHealth = player.GetComponent<PlayerHealth>();
         agent.speed = patrolSpeed;
 
         if (!agent.isOnNavMesh)
@@ -109,6 +116,44 @@ public class Enemy : MonoBehaviour
         hitStun = null;
     }
 
+    // A thrown item (coconut) hit it: pushed back, stunned, then straight back to chasing
+    public void HitByThrow(Vector3 direction)
+    {
+        if (IsDead) return;
+
+        if (hitStun != null) StopCoroutine(hitStun);
+        hitStun = StartCoroutine(ThrowStun(direction));
+    }
+
+    private IEnumerator ThrowStun(Vector3 direction)
+    {
+        IsStunned = true;
+        SetAnimTrigger("IsGettingDamage");
+        Agent.isStopped = true;
+        Agent.ResetPath();
+
+        // Slide back along the NavMesh (stays in the water), fast at first then easing out
+        direction.y = 0f;
+        if (direction.sqrMagnitude < 0.001f) direction = -transform.forward;
+        direction.Normalize();
+        float t = 0f;
+        while (t < knockbackTime)
+        {
+            float speed = knockbackDistance / knockbackTime * 2f * (1f - t / knockbackTime);
+            Agent.Move(direction * speed * Time.deltaTime);
+            t += Time.deltaTime;
+            yield return null;
+        }
+
+        yield return new WaitForSeconds(Mathf.Max(0f, throwStunDuration - knockbackTime));
+
+        Agent.isStopped = false;
+        IsStunned = false;
+        hitStun = null;
+        if (player != null) LastKnowPos = player.transform.position;
+        stateMachine.ChangeState(GetAttackState());
+    }
+
     private IEnumerator DeathAnimation()
     {
         Agent.isStopped = true;
@@ -125,9 +170,14 @@ public class Enemy : MonoBehaviour
         return offset.magnitude;
     }
 
+    // Hiding in a jar/barrel or standing on a boat makes the player unreachable
+    public bool PlayerHidden => InteractionController.CurrentBarrel != null
+        || (player != null && BoatSafeZone.IsPlayerAboard(player.transform))
+        || (playerHealth != null && playerHealth.IsDead);
+
     public bool PlayerInDetectionZone()
     {
-        return DistanceToPlayer() < detectionRadius;
+        return !PlayerHidden && DistanceToPlayer() < detectionRadius;
     }
 
     public void FaceTarget(Vector3 target)

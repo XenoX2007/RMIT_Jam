@@ -6,8 +6,8 @@ public class PlayerAnimator : MonoBehaviour
 {
     [SerializeField] private Animator animator;
     [SerializeField] private Rigidbody rb;
-    [Tooltip("Ground speed (m/s) at which the walk clip plays at normal speed.")]
-    [SerializeField] private float walkAnimSpeedRef = 2.2f;
+    [Tooltip("Ground speed (m/s) at which the walk clip plays at normal speed (the clip's own stride speed at this model size).")]
+    [SerializeField] private float walkAnimSpeedRef = 2.03f;
     [SerializeField] private float minWalkAnimSpeed = 0.8f;
     [SerializeField] private float maxWalkAnimSpeed = 2f;
     [SerializeField] private float speedSmoothing = 10f;

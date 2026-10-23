@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -34,6 +35,13 @@ public class Swimming : MonoBehaviour
     [Tooltip("Jump in water = a push up, to climb out onto the bank.")]
     [SerializeField] private float climbOutForce = 6f;
 
+    [Header("Climb out (boats, low banks)")]
+    [Tooltip("Highest edge above the water the player can pull up onto with Jump.")]
+    [SerializeField] private float maxClimbHeight = 1.8f;
+    [Tooltip("How far ahead to look for something to climb onto.")]
+    [SerializeField] private float climbReach = 1.1f;
+    [SerializeField] private float climbTime = 0.4f;
+
     [Header("References")]
     [SerializeField] private Movement movement;
     [SerializeField] private Transform cameraTransform;
@@ -54,6 +62,7 @@ public class Swimming : MonoBehaviour
     private Collider body;
     private float defaultDamping;
     private bool jumpQueued;
+    private bool climbing;
 
     private void Awake()
     {
@@ -80,6 +89,9 @@ public class Swimming : MonoBehaviour
 
     private void FixedUpdate()
     {
+        // Frozen (e.g. hiding inside a jar in the water): nothing to swim
+        if (rb.isKinematic) return;
+
         bool overWater = WaterLevel(out float level);
         float depth = overWater ? level - body.bounds.min.y : 0f;
 
@@ -93,8 +105,26 @@ public class Swimming : MonoBehaviour
 
     private bool WaterLevel(out float level)
     {
+        return WaterLevelAt(rb.position, out level);
+    }
+
+    // Height of the water surface (all surfaces are flat at the same level)
+    public bool SurfaceHeight(out float level)
+    {
         level = 0f;
-        Vector3 p = rb.position;
+        foreach (Renderer water in waterSurfaces)
+        {
+            if (water == null) continue;
+            level = water.bounds.max.y;
+            return true;
+        }
+        return false;
+    }
+
+    // Is this point over water, and how high is the surface there
+    public bool WaterLevelAt(Vector3 p, out float level)
+    {
+        level = 0f;
         foreach (Renderer water in waterSurfaces)
         {
             if (water == null) continue;
@@ -170,6 +200,11 @@ public class Swimming : MonoBehaviour
         float bob = Mathf.Sin(Time.time * bobSpeed) * bobHeight;
         float targetY = level - (State == SwimState.Swimming ? swimDepth : floatDepth) + bob;
         float vertical = Mathf.Lerp(velocity.y, (targetY - rb.position.y) * buoyancy, 5f * Time.fixedDeltaTime);
+        if (jumpQueued && TryClimb(level))
+        {
+            jumpQueued = false;
+            return;
+        }
         if (jumpQueued)
         {
             vertical = climbOutForce;
@@ -187,6 +222,95 @@ public class Swimming : MonoBehaviour
         rb.angularVelocity = Vector3.zero;
 
         UpdateAnimator();
+    }
+
+    // Jump in the water next to a boat / low bank: pull up onto it
+    private bool TryClimb(float level)
+    {
+        if (climbing) return false;
+
+        var capsule = body as CapsuleCollider;
+        float radius = capsule != null ? capsule.radius : 0.3f;
+        float halfHeight = capsule != null ? capsule.height * 0.5f : 1f;
+
+        Vector3 forward = transform.forward;
+        forward.y = 0f;
+        forward = forward.sqrMagnitude > 0.001f ? forward.normalized : Vector3.forward;
+
+        // Straight ahead first, then fan out around the player
+        float[] angles = { 0f, 35f, -35f, 70f, -70f, 110f, -110f, 180f };
+        foreach (float angle in angles)
+        {
+            Vector3 dir = Quaternion.AngleAxis(angle, Vector3.up) * forward;
+            for (float reach = 0.4f; reach <= climbReach; reach += 0.35f)
+            {
+                Vector3 probe = rb.position + dir * (radius + reach);
+                probe.y = level + maxClimbHeight + 0.5f;
+                if (!Physics.Raycast(probe, Vector3.down, out RaycastHit hit, maxClimbHeight + 1.5f, ~0, QueryTriggerInteraction.Ignore))
+                    continue;
+                if (hit.transform.IsChildOf(transform) || hit.normal.y < 0.6f)
+                    continue;
+
+                float height = hit.point.y - level;
+                if (height < 0.15f || height > maxClimbHeight)
+                    continue;
+
+                Vector3 stand = hit.point + Vector3.up * (halfHeight + 0.05f);
+                if (!HasRoom(stand, radius, halfHeight))
+                    continue;
+
+                StartCoroutine(Climb(stand, hit.collider.transform, dir));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private bool HasRoom(Vector3 centre, float radius, float halfHeight)
+    {
+        Vector3 bottom = centre + Vector3.down * (halfHeight - radius - 0.05f);
+        Vector3 top = centre + Vector3.up * (halfHeight - radius);
+        foreach (Collider c in Physics.OverlapCapsule(bottom, top, radius * 0.9f, ~0, QueryTriggerInteraction.Ignore))
+        {
+            if (c.transform.IsChildOf(transform)) continue;
+            if (c.attachedRigidbody != null && c.attachedRigidbody.isKinematic && c.GetComponent<ThrowableObject>() != null) continue;   // coconuts on deck don't block
+            return false;
+        }
+        return true;
+    }
+
+    private IEnumerator Climb(Vector3 stand, Transform onto, Vector3 dir)
+    {
+        climbing = true;
+        rb.isKinematic = true;   // Swimming pauses while kinematic
+
+        // Follow the boat while climbing (it bobs)
+        Vector3 localStand = onto.InverseTransformPoint(stand);
+        Vector3 start = rb.position;
+        Quaternion startRot = rb.rotation;
+        Quaternion endRot = Quaternion.LookRotation(dir);
+
+        for (float t = 0f; t < climbTime; t += Time.deltaTime)
+        {
+            float k = t / climbTime;
+            Vector3 target = onto != null ? onto.TransformPoint(localStand) : stand;
+            // Up first, then over the edge
+            float up = 1f - (1f - k) * (1f - k);
+            float over = k * k * (3f - 2f * k);
+            Vector3 p = new Vector3(Mathf.Lerp(start.x, target.x, over), Mathf.Lerp(start.y, target.y, up), Mathf.Lerp(start.z, target.z, over));
+            rb.position = p;
+            transform.position = p;
+            transform.rotation = Quaternion.Slerp(startRot, endRot, over);
+            yield return null;
+        }
+
+        Vector3 end = onto != null ? onto.TransformPoint(localStand) : stand;
+        rb.position = end;
+        transform.position = end;
+        rb.rotation = endRot;
+        rb.isKinematic = false;
+        rb.linearVelocity = Vector3.zero;
+        climbing = false;
     }
 
     private void UpdateAnimator()

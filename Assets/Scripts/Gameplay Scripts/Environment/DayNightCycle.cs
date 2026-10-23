@@ -34,6 +34,8 @@ public class DayNightCycle : MonoBehaviour
     [Header("Night objects")]
     [Tooltip("Every Light under this root is turned on at night.")]
     [SerializeField] Transform lanternRoot;
+    [Tooltip("More roots whose Lights are lanterns too (e.g. lanterns on the boats).")]
+    [SerializeField] Transform[] extraLanternRoots;
     [Tooltip("Every ParticleSystem under this root only emits at night.")]
     [SerializeField] Transform fireflyRoot;
     [Tooltip("Unlit effects (fog, rain) that should darken at night.")]
@@ -69,10 +71,14 @@ public class DayNightCycle : MonoBehaviour
         }
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Trilight;
 
-        if (lanternRoot != null)
+        var roots = new List<Transform> { lanternRoot };
+        if (extraLanternRoots != null) roots.AddRange(extraLanternRoots);
+        foreach (Transform root in roots)
         {
-            foreach (Light l in lanternRoot.GetComponentsInChildren<Light>())
+            if (root == null) continue;
+            foreach (Light l in root.GetComponentsInChildren<Light>())
             {
+                if (lanterns.Contains(l)) continue;
                 lanterns.Add(l);
                 lanternIntensity.Add(l.intensity);
             }

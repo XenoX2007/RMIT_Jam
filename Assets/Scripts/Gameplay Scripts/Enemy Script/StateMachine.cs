@@ -24,9 +24,13 @@ public class StateMachine : MonoBehaviour
     {
         if(activeState != null)
         {
+            // frozen while stunned, so no state can restart the agent early
+            if(activeState.enemy != null && activeState.enemy.IsStunned)
+                return;
+
             activeState.Perform();
         }
-        
+
     }
     public void ChangeState(BaseState newState)
     {

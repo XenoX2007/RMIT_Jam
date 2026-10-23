@@ -32,6 +32,13 @@ public class AttackState : BaseState
         if (enemy.IsStunned || enemy.IsDead)
             return; // frozen while hurt/death animation plays
 
+        // Player hid: lose them right away and search where they were last seen
+        if (enemy.PlayerHidden)
+        {
+            stateMachine.ChangeState(new SearchState());
+            return;
+        }
+
         attackTimer += Time.deltaTime;
         float distance = enemy.DistanceToPlayer();
 
@@ -95,7 +102,7 @@ public class AttackState : BaseState
         yield return new WaitForSeconds(enemy.biteHitDelay);
 
         // cancel if interrupted mid-bite, or the player already got out of reach
-        if (!enemy.IsStunned && !enemy.IsDead && enemy.DistanceToPlayer() <= enemy.attackRange * 1.2f)
+        if (!enemy.IsStunned && !enemy.IsDead && !enemy.PlayerHidden && enemy.DistanceToPlayer() <= enemy.attackRange * 1.2f)
             HitPlayer();
 
         yield return new WaitForSeconds(0.3f);
