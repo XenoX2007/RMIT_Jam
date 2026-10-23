@@ -2529,6 +2529,8 @@ MonoBehaviour:
   animator: {fileID: 0}
   screamState: Scream
   screamRestartAfter: 0.5
+  screamSound: {fileID: 0}
+  screamVolume: 1
 --- !u!1 &1308055661
 GameObject:
   m_ObjectHideFlags: 0
@@ -2571,6 +2573,8 @@ MonoBehaviour:
   animator: {fileID: 165993563}
   screamState: Scream
   screamRestartAfter: 0.5
+  screamSound: {fileID: 8300000, guid: b511b41ec15ee9c4c833d8be9d17a3fb, type: 3}
+  screamVolume: 1
 --- !u!4 &1308055663
 Transform:
   m_ObjectHideFlags: 0
