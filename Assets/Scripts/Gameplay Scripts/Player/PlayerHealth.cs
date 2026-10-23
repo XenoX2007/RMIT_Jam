@@ -24,10 +24,37 @@ public class PlayerHealth : MonoBehaviour
     public event Action<int, int> HealthChanged;
 
     private float lastHitTime = -99f;
+    private Vector3 spawnPosition;
+    private Quaternion spawnRotation;
 
     private void Awake()
     {
         Health = maxHealth;
+        spawnPosition = transform.position;
+        spawnRotation = transform.rotation;
+    }
+
+    // Back to where the player started, full health, able to move
+    public void Respawn()
+    {
+        Vector3 from = transform.position;
+        if (TryGetComponent(out Rigidbody rb))
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.position = spawnPosition;
+            rb.rotation = spawnRotation;
+        }
+        transform.SetPositionAndRotation(spawnPosition, spawnRotation);
+        Unity.Cinemachine.CinemachineCore.OnTargetObjectWarped(transform, spawnPosition - from);
+
+        if (TryGetComponent(out Movement movement)) movement.CanMove = true;
+        StopAllCoroutines();   // cancel a pending death reload
+        lastHitTime = -99f;
+        Health = maxHealth;
+        HealthChanged?.Invoke(Health, maxHealth);
     }
 
     private void Start()

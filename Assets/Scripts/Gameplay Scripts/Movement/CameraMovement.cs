@@ -25,6 +25,8 @@ public class CameraMovement : MonoBehaviour
     [SerializeField] private float hiddenDistance = 9f;
     [SerializeField] private float hideZoomSmoothTime = 0.35f;
 
+    public float Sensitivity { get => sensitivity; set => sensitivity = Mathf.Max(0.01f, value); }
+
     private CinemachineOrbitalFollow orbit;
     private float targetDistance;
     private float zoomVelocity;
@@ -66,6 +68,13 @@ public class CameraMovement : MonoBehaviour
     {
         Mouse mouse = Mouse.current;
         if (mouse == null) return;
+
+        // Pause menu open: give the cursor back and ignore orbit / zoom
+        if (PauseMenu.IsPaused)
+        {
+            if (looking) StopLooking();
+            return;
+        }
 
         bool held = rightClick.action.IsPressed();
         if (held && !looking) StartLooking(mouse);
