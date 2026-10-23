@@ -127584,6 +127584,8 @@ MonoBehaviour:
   moveAction: {fileID: 8096976582973932420, guid: 36fa156cee9330b4da63812d6419fe38, type: 3}
   jumpAction: {fileID: -5973076484243731466, guid: 36fa156cee9330b4da63812d6419fe38, type: 3}
   sprintAction: {fileID: -6446547249574035036, guid: 36fa156cee9330b4da63812d6419fe38, type: 3}
+  rightClickAction: {fileID: 3626918475295767937, guid: 36fa156cee9330b4da63812d6419fe38, type: 3}
+  faceCameraWhileLooking: 0
   animator: {fileID: 0}
 --- !u!1001 &993962424
 PrefabInstance:
