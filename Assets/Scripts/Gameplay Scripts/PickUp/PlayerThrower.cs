@@ -96,6 +96,9 @@ public class PlayerThrower : MonoBehaviour
     public bool Throw(ThrowableObject item)
     {
         if (IsThrowing || animator == null) return false;
+        // Clicking a menu / the emote board is not a throw
+        if (PlayerEmotes.BoardOpen) return false;
+        if (UnityEngine.EventSystems.EventSystem.current != null && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject()) return false;
         if (swimming != null && swimming.InWater) return false;   // no throwing while swimming
 
         // Throw exactly where the preview was showing (aim is refreshed every frame while holding)

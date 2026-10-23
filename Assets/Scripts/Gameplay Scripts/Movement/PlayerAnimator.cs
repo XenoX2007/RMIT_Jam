@@ -1,7 +1,8 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 // Feeds the player's movement into the Animator (PlayerController).
-// Swimming sets IsSwimming / IsFloating itself; this sets Speed and the walk playback speed.
+// Swimming sets IsSwimming / IsFloating itself; this sets Speed, IsRunning and the walk/run playback speed.
 public class PlayerAnimator : MonoBehaviour
 {
     [SerializeField] private Animator animator;
@@ -12,8 +13,19 @@ public class PlayerAnimator : MonoBehaviour
     [SerializeField] private float maxWalkAnimSpeed = 2f;
     [SerializeField] private float speedSmoothing = 10f;
 
+    [Header("Run (hold Sprint)")]
+    [SerializeField] private InputActionReference sprintAction;
+    [Tooltip("Ground speed (m/s) at which the run clip plays at normal speed.")]
+    [SerializeField] private float runAnimSpeedRef = 7f;
+    [SerializeField] private float minRunAnimSpeed = 0.6f;
+    [SerializeField] private float maxRunAnimSpeed = 1.5f;
+    [Tooltip("Slower than this the player walks even while holding Sprint.")]
+    [SerializeField] private float minRunSpeed = 1f;
+
     private static readonly int SpeedId = Animator.StringToHash("Speed");
     private static readonly int WalkAnimSpeedId = Animator.StringToHash("WalkAnimSpeed");
+    private static readonly int RunAnimSpeedId = Animator.StringToHash("RunAnimSpeed");
+    private static readonly int IsRunningId = Animator.StringToHash("IsRunning");
 
     private float speed;
 
@@ -31,7 +43,10 @@ public class PlayerAnimator : MonoBehaviour
         velocity.y = 0f;
         speed = Mathf.Lerp(speed, velocity.magnitude, speedSmoothing * Time.deltaTime);
 
+        bool sprinting = sprintAction != null && sprintAction.action.IsPressed();
         animator.SetFloat(SpeedId, speed);
+        animator.SetBool(IsRunningId, sprinting && speed > minRunSpeed);
         animator.SetFloat(WalkAnimSpeedId, Mathf.Clamp(speed / walkAnimSpeedRef, minWalkAnimSpeed, maxWalkAnimSpeed));
+        animator.SetFloat(RunAnimSpeedId, Mathf.Clamp(speed / runAnimSpeedRef, minRunAnimSpeed, maxRunAnimSpeed));
     }
 }
