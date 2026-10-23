@@ -568,15 +568,20 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "# GAME CREDITS\n\n## Development Team\n\n**Nguyen Tuan Minh**  \n*Game
-    Developer \xB7 Game Designer*  \nUI/UX Design \xB7 Cutscenes \xB7 Animation \xB7
-    Sound Effects \xB7 Visual Effects (VFX)\n\n**Tran Tuan Kiet**  \n*Game Developer
-    \xB7 Game Designer*  \nPlayer Movement Mechanics \xB7 Enemy Movement \xB7 Score
-    System \xB7 Push Mechanics\n\n## Art & Design Team\n\n**Le Phuong Linh**  \n*Game
-    Artist \xB7 3D Modeller \xB7 Game Designer*  \nMap Modelling \xB7 Prop Modelling\n\n**Chau
-    Bao Quyen**  \n*Game Artist \xB7 3D Modeller \xB7 Game Designer*  \nMap Modelling
-    \xB7 Prop Modelling\n\n---\n\n**THANK YOU FOR PLAYING!**  \n*Made with passion
-    by our team.*"
+  m_text: "GAME CREDITS \r\n\r\nDevelopment Team \r\n\r\nNguyen Tuan Minh \r\n\r\nGame
+    Developer \xB7 Game Designer \r\n\r\nUI/UX Design \xB7 Cutscenes \xB7 Animation
+    \xB7 Sound Effects \xB7 Visual Effects (VFX)\xB7 Music \xB7 Map Builder \xB7
+    Enemy Systems \xB7 Day/Night Cycle systems \xB7 Lighting \xB7 Boss Fight \xB7
+    Interactable Object \xB7 Floating Object  \xB7 Core Gameplay Design  \xB7 Player
+    Emotes \xB7 Throwing Mechanics\r\n\r\nTran Tuan Kiet \r\n\r\nGame Developer \xB7
+    Game Designer \r\n\r\nPlayer Movement Mechanics \xB7 Map Builder \xB7 Interact
+    Systems \xB7 Push Mechanics \xB7 Player Camera \xB7 Core Gameplay Design \xB7
+    Throwing Mechanics  \xB7 Hiding Mechanics  \xB7 Music \xB7 CutScene\r\n\r\nArt
+    & Design Team \r\n\r\nLe Phuong Linh \r\n\r\nGame Artist \xB7 3D Modeller \xB7
+    Game Designer \r\n\r\n Modelling \xB7 Props Modelling \xB7 Core Gameplay Design 
+    \xB7 Story for the Game  \xB7 CutScene \xB7 Sounds\r\n\r\nChau Bao Quyen \r\n\r\nGame
+    Artist \xB7 3D Modeller \xB7 Game Designer \r\n\r\nCharacters Modelling \xB7
+    Prop Modelling \xB7 Core Gameplay Design  \xB7 Story for the Game \xB7 CutScene "
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1034,9 +1039,9 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 8300000, guid: d7e96ea52352d454197fc8a1da05b4dd, type: 3}
+  m_Resource: {fileID: 8300000, guid: 397b93ef75a027e4786ae5d75e18b2d9, type: 3}
   m_PlayOnAwake: 1
-  m_Volume: 1
+  m_Volume: 0.171
   m_Pitch: 1
   Loop: 1
   Mute: 0
