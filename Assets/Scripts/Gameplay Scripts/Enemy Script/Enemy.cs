@@ -40,6 +40,13 @@ public class Enemy : MonoBehaviour
     public float knockbackDistance = 3f;
     public float knockbackTime = 0.35f;
 
+    [Header("Looks")]
+    [Tooltip("Model renderers that switch to the angry material while chasing.")]
+    public Renderer[] bodyRenderers;
+    public Material calmMaterial;
+    public Material angryMaterial;   // e.g. red eyes
+    private bool angry;
+
     public bool IsStunned { get; private set; }
     public bool IsDead { get; private set; }
 
@@ -74,6 +81,20 @@ public class Enemy : MonoBehaviour
         if (IsDead || stateMachine == null || stateMachine.activeState == null) return;
 
         currentState = stateMachine.activeState.ToString();
+
+        // Red eyes while hunting the player
+        bool hunting = stateMachine.activeState is AttackState;
+        if (hunting != angry && angryMaterial != null && calmMaterial != null && bodyRenderers != null)
+        {
+            angry = hunting;
+            foreach (Renderer r in bodyRenderers)
+            {
+                if (r == null) continue;
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++) mats[i] = angry ? angryMaterial : calmMaterial;
+                r.sharedMaterials = mats;
+            }
+        }
         float speed = Agent.velocity.magnitude;
         SetAnimFloat("Speed", speed);
     }

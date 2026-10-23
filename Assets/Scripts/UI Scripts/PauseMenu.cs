@@ -22,7 +22,6 @@ public class PauseMenu : MonoBehaviour
     [SerializeField] InputActionAsset gameplayInput;
 
     [Header("Settings")]
-    [SerializeField] Slider masterVolume;
     [SerializeField] Slider sensitivity;
     [SerializeField] CameraMovement cameraMovement;
     [SerializeField] TMP_Dropdown resolutionDropdown;
@@ -49,7 +48,6 @@ public class PauseMenu : MonoBehaviour
 
         if (cameraMovement != null) defaultSensitivity = cameraMovement.Sensitivity;
         if (sensitivity != null) defaultSensitivitySlider = Mathf.Max(0.05f, sensitivity.normalizedValue);
-        if (masterVolume != null) masterVolume.onValueChanged.AddListener(v => AudioListener.volume = v);
         if (sensitivity != null) sensitivity.onValueChanged.AddListener(ApplySensitivity);
         if (resolutionDropdown != null) resolutionDropdown.onValueChanged.AddListener(ApplyResolution);
     }
@@ -142,8 +140,7 @@ public class PauseMenu : MonoBehaviour
         buttonList.SetActive(false);
         settingsPanel.SetActive(true);
 
-        // Show the current values
-        if (masterVolume != null) masterVolume.SetValueWithoutNotify(AudioListener.volume);
+        // Show the current values (volume sliders are kept in sync by SoundSettingsUI)
         if (resolutionDropdown != null)
         {
             int index = 0;
