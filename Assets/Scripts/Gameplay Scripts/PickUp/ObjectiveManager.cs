@@ -4,6 +4,8 @@ using UnityEngine;
 public class ObjectiveManager : MonoBehaviour
 {
     [SerializeField] private TMP_Text objectiveText;
+    [SerializeField] private AudioClip collectSound;
+    [SerializeField, Range(0f, 1f)] private float collectVolume = 1f;
 
     public static ObjectiveManager Instance;
 
@@ -17,6 +19,7 @@ public class ObjectiveManager : MonoBehaviour
     public void CollectPiece()
     {
         collectedPieces++;
+        PlayCollectSound();
 
         Debug.Log(
             $"Collected {collectedPieces}/3");
@@ -25,6 +28,19 @@ public class ObjectiveManager : MonoBehaviour
         {
             WinGame();
         }
+    }
+
+    // 2D one-shot, so it sounds the same however far the camera is
+    private void PlayCollectSound()
+    {
+        if (collectSound == null) return;
+        if (!TryGetComponent(out AudioSource source))
+        {
+            source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false;
+            source.spatialBlend = 0f;
+        }
+        source.PlayOneShot(collectSound, collectVolume * GameAudio.Sfx);
     }
 
     private void WinGame()

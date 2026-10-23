@@ -33,6 +33,14 @@ public class PlayerThrower : MonoBehaviour
     [Tooltip("Roughly where the hands let go, in the player's space (used for the preview arc).")]
     [SerializeField] private Vector3 releasePoint = new Vector3(0f, 0.65f, 0.05f);
 
+    [Header("Sound")]
+    [Tooltip("Plays when the hands let go. Follows the SFX Volume slider.")]
+    [SerializeField] private AudioClip throwSound;
+    [SerializeField, Range(0f, 1f)] private float throwVolume = 0.9f;
+    [Tooltip("The clip holds several whooshes: start time (seconds) and length of the one to play.")]
+    [SerializeField] private float throwSoundStart = 0f;
+    [SerializeField] private float throwSoundLength = 0.6f;
+
     [Header("Preview")]
     [SerializeField] private Color previewColor = new Color(1f, 0.95f, 0.6f, 0.9f);
     [SerializeField] private Color lockedColor = new Color(1f, 0.25f, 0.2f, 0.95f);
@@ -50,6 +58,9 @@ public class PlayerThrower : MonoBehaviour
     private bool followHands;
     private Vector3 carryLocal;     // where the item was carried, in the player's space
     private float graspTimer;
+
+    private AudioSource throwSource;
+    private Coroutine throwStop;
 
     private LineRenderer arc;
     private LineRenderer ring;
@@ -151,6 +162,7 @@ public class PlayerThrower : MonoBehaviour
         // Aim from where the item really is now (a locked enemy may have moved meanwhile)
         item.Release(Launch(item.transform.position, AimTarget(), out _));
         heldItem = null;
+        PlayThrowSound();
 
         // Finish the follow-through, then give control back
         while (InThrowState() && animator.GetCurrentAnimatorStateInfo(0).normalizedTime < recoverTime)
@@ -247,7 +259,10 @@ public class PlayerThrower : MonoBehaviour
 
     private Vector3 AimTarget()
     {
-        return aimEnemy != null ? aimEnemy.transform.position : aimPoint;
+        if (aimEnemy == null) return aimPoint;
+        // aim at the body, not the feet (the crocodile's pivot is under the water)
+        Collider body = aimEnemy.GetComponent<Collider>();
+        return body != null ? body.bounds.center : aimEnemy.transform.position;
     }
 
     // Velocity that carries the item from start to target (always lands on it)
@@ -315,6 +330,31 @@ public class PlayerThrower : MonoBehaviour
         }
 
         ShowPreview(true);
+    }
+
+    // Plays one whoosh out of the clip, then stops before the next one starts
+    private void PlayThrowSound()
+    {
+        if (throwSound == null) return;
+        if (throwSource == null)
+        {
+            throwSource = gameObject.AddComponent<AudioSource>();
+            throwSource.playOnAwake = false;
+            throwSource.spatialBlend = 0f;
+        }
+        if (throwStop != null) StopCoroutine(throwStop);
+        throwSource.clip = throwSound;
+        throwSource.volume = throwVolume * GameAudio.Sfx;
+        throwSource.time = Mathf.Clamp(throwSoundStart, 0f, throwSound.length - 0.01f);
+        throwSource.Play();
+        throwStop = StartCoroutine(StopThrowSound());
+    }
+
+    private IEnumerator StopThrowSound()
+    {
+        yield return new WaitForSeconds(throwSoundLength);
+        throwSource.Stop();
+        throwStop = null;
     }
 
     private bool InThrowState()
