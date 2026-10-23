@@ -30,6 +30,11 @@ public class BattleCharacter : MonoBehaviour
     [SerializeField] string screamState = "Scream";
     [Tooltip("Đang hét chưa tới mốc này (0-1) thì không hét lại từ đầu, để miss liên tiếp không làm giật animation.")]
     [SerializeField, Range(0f, 1f)] float screamRestartAfter = 0.5f;
+    [Tooltip("Tiếng gầm phát cùng animation Scream (theo SFX Volume trong menu).")]
+    [SerializeField] AudioClip screamSound;
+    [SerializeField, Range(0f, 1f)] float screamVolume = 1f;
+
+    AudioSource voice;
 
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
@@ -89,6 +94,22 @@ public class BattleCharacter : MonoBehaviour
         if (animator.IsInTransition(0) && animator.GetNextAnimatorStateInfo(0).IsName(screamState)) return;
 
         animator.CrossFadeInFixedTime(screamState, 0.12f, 0, 0f);
+        PlayScreamSound();
+    }
+
+    // Gầm lại từ đầu mỗi lần hét (không chồng nhiều tiếng gầm lên nhau)
+    void PlayScreamSound()
+    {
+        if (screamSound == null) return;
+        if (voice == null)
+        {
+            voice = gameObject.AddComponent<AudioSource>();
+            voice.playOnAwake = false;
+            voice.spatialBlend = 0f;
+        }
+        voice.clip = screamSound;
+        voice.volume = screamVolume * GameAudio.Sfx;
+        voice.Play();
     }
 
     public void Defeat()
