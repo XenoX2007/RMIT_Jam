@@ -56,8 +56,48 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: b93a2cbdddad8fe4e9d812f53e6e697d, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 83d2dbb85c400e042af22ce890e7c845, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: c502fdc472fb48a4389c5a3fd107967d, type: 2}
+    - target: {fileID: 5866666021909216657, guid: 83d2dbb85c400e042af22ce890e7c845, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 83d2dbb85c400e042af22ce890e7c845, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5184651117602221410}
   m_SourcePrefab: {fileID: 100100000, guid: 83d2dbb85c400e042af22ce890e7c845, type: 3}
+--- !u!1 &2734893623140348826 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 83d2dbb85c400e042af22ce890e7c845, type: 3}
+  m_PrefabInstance: {fileID: 2969317546187017931}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5184651117602221410
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2734893623140348826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a9fc7ce1d78c494280f9ede26b13b7b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::NPCDialogue
+  lines:
+  - "The crocodiles took the river...\nStay close to the shore, T\xED."
+  secondsPerLine: 4
+  alwaysShow: 0
+  showDistance: 8
+  heightAboveHead: 0.45
+  bubbleScale: 0.009
+  maxWidth: 560
+  fontSize: 30
+  bubbleColor: {r: 0.98, g: 0.95, b: 0.88, a: 0.95}
+  textColor: {r: 0.15, g: 0.1, b: 0.06, a: 1}
+  charsPerSecond: 45

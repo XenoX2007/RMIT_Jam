@@ -65,6 +65,7 @@ public class PauseMenu : MonoBehaviour
     {
         Keyboard keyboard = Keyboard.current;
         if (keyboard == null || !keyboard.escapeKey.wasPressedThisFrame) return;
+        if (GameOverScreen.IsShowing) return;   // the game-over panel has its own buttons
 
         if (!IsPaused) Pause();
         else if (settingsPanel != null && settingsPanel.activeSelf) CloseSettings();
