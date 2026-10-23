@@ -32,6 +32,7 @@ public class Movement : MonoBehaviour
     private Rigidbody rb;
     private bool isGrounded;
     private Vector2 moveInput;
+    public bool CanMove = true;
 
     private void Awake()
     {
@@ -89,6 +90,9 @@ public class Movement : MonoBehaviour
 
     private void FixedUpdate()
     {
+        if (!CanMove)
+            return;
+
         Vector3 cameraForward = cameraTransform.forward;
         Vector3 cameraRight = cameraTransform.right;
 
