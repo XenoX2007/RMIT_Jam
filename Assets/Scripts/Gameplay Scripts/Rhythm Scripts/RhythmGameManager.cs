@@ -265,6 +265,10 @@ public class RhythmGameManager : MonoBehaviour
 
         progress = Mathf.Clamp01(progress + delta);
 
+        // Player bị trừ thanh (miss / bấm sai) -> boss hét
+        if (delta < 0f)
+            boss.Scream();
+
         if (progress >= 1f)
             EndGame(true);
         else if (progress <= 0f)
