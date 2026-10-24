@@ -57,6 +57,12 @@ public class Enemy : MonoBehaviour
     public float attackCooldown = 1.5f;
     public float biteHitDelay = 0.5f;   // time from the start of the Attack animation to the jaws closing
     public int biteDamage = 1;
+    [Tooltip("Speed (m/s) the crocodile surges forward during a bite. Faster than the player swims (3), so a fleeing swimmer gets caught.")]
+    public float biteLungeSpeed = 6.5f;
+    [Tooltip("The bite lands if the player is within attackRange x this when the jaws close.")]
+    public float biteReach = 1.5f;
+    [Tooltip("Start the bite already at attackRange x this when chasing (the lunge covers the gap).")]
+    public float biteStartRange = 1.6f;
     public float knockbackForce = 6f;
 
     void Start()

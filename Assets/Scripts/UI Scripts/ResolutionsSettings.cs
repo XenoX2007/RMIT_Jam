@@ -22,6 +22,10 @@ public class ResolutionsSettings : MonoBehaviour
 
     void ApplyResolution(int index)
     {
+#if UNITY_WEBGL && !UNITY_EDITOR
+        // Trên trình duyệt, trang web quyết định kích thước canvas: đặt độ phân giải sẽ làm hình bị lệch / nhỏ ở góc
+        return;
+#endif
         switch (index)
         {
             case 0:

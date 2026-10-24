@@ -10,12 +10,16 @@ public class HipLantern : MonoBehaviour
     [SerializeField] private Light lanternLight;
     [Tooltip("Where the lantern hangs, relative to the hips (x = side, y = up, z = forward).")]
     [SerializeField] private Vector3 hipOffset = new Vector3(-0.2f, -0.05f, 0.04f);
+    [Tooltip("Where the lantern is held while swimming, relative to the hips (held up in front, out of the water).")]
+    [SerializeField] private Vector3 heldOffset = new Vector3(-0.3f, 0.75f, 0.35f);
+    [Tooltip("While swimming the lantern stays at least this high above the water surface.")]
+    [SerializeField] private float aboveWater = 0.45f;
 
     [Header("Light")]
-    [SerializeField] private float nightIntensity = 4f;
+    [SerializeField] private float nightIntensity = 6f;
     [Tooltip("Light left on during the day (0 = off).")]
     [SerializeField] private float dayIntensity = 0f;
-    [SerializeField] private float range = 14f;
+    [SerializeField] private float range = 18f;
     [SerializeField] private float fadeTime = 2f;
     [SerializeField] private float flicker = 0.08f;
 
@@ -29,10 +33,15 @@ public class HipLantern : MonoBehaviour
     private Vector3 swing;
     private Quaternion baseRotation = Quaternion.identity;
     private float level;
+    private float held;
+    private Swimming swimming;
+
+    private static float Smooth(float t) => t * t * (3f - 2f * t);
 
     private void Start()
     {
         dayNight = FindAnyObjectByType<DayNightCycle>();
+        swimming = GetComponent<Swimming>();
         if (body == null) body = GetComponentInChildren<Animator>();
         if (body != null && body.isHuman) hips = body.GetBoneTransform(HumanBodyBones.Hips);
         if (lanternLight != null)
@@ -53,9 +62,15 @@ public class HipLantern : MonoBehaviour
     {
         if (lantern == null || hips == null) return;
 
-        // Hang beside the hip, facing the way the player faces
+        // Hang beside the hip, facing the way the player faces.
+        // In the water the player holds it up above the surface (a light under the water lights nothing).
         Quaternion facing = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
-        Vector3 target = hips.position + facing * hipOffset;
+        bool inWater = swimming != null && swimming.InWater;
+        held = Mathf.MoveTowards(held, inWater ? 1f : 0f, Time.deltaTime * 3f);
+        Vector3 offset = Vector3.Lerp(hipOffset, heldOffset, Smooth(held));
+        Vector3 target = hips.position + facing * offset;
+        if (inWater && swimming.SurfaceHeight(out float surface))
+            target.y = Mathf.Max(target.y, surface + aboveWater);
 
         // Swing against the movement, like a lantern on a cord
         Vector3 velocity = (target - lastPosition) / Mathf.Max(Time.deltaTime, 0.0001f);
