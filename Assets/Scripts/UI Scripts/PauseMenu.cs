@@ -175,6 +175,9 @@ public class PauseMenu : MonoBehaviour
     void ApplyResolution(int index)
     {
         if (index < 0 || index >= Resolutions.Length) return;
+#if UNITY_WEBGL && !UNITY_EDITOR
+        return;   // the browser page sets the canvas size on WebGL
+#endif
         Screen.SetResolution(Resolutions[index].x, Resolutions[index].y, Screen.fullScreenMode);
     }
 }

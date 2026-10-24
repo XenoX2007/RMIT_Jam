@@ -581,7 +581,8 @@ MonoBehaviour:
     Game Designer \r\n\r\n Modelling \xB7 Props Modelling \xB7 Core Gameplay Design 
     \xB7 Story for the Game  \xB7 CutScene \xB7 Sounds\r\n\r\nChau Bao Quyen \r\n\r\nGame
     Artist \xB7 3D Modeller \xB7 Game Designer \r\n\r\nCharacters Modelling \xB7
-    Prop Modelling \xB7 Core Gameplay Design  \xB7 Story for the Game \xB7 CutScene "
+    Prop Modelling \xB7 Core Gameplay Design  \xB7 Story for the Game \xB7 CutScene\n\nHo
+    Hung\nVoice Actor "
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -673,7 +674,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 892982a123d62024ba42d4e690a946d2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CreditsScript
-  scrollSpeed: 40
+  scrollSpeed: 70
 --- !u!1 &797806783
 GameObject:
   m_ObjectHideFlags: 0

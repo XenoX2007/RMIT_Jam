@@ -60,7 +60,7 @@ public class AttackState : BaseState
 
         if (biting)
         {
-            enemy.FaceTarget(enemy.Player.transform.position);
+            Lunge();
             return;
         }
 
@@ -70,6 +70,11 @@ public class AttackState : BaseState
             enemy.FaceTarget(enemy.Player.transform.position);
             if (attackTimer >= enemy.attackCooldown && FacingPlayer())
                 enemy.StartCoroutine(Bite());
+        }
+        // Closing in on a fleeing swimmer: start the bite a little early so the lunge lands it
+        else if (distance <= enemy.attackRange * enemy.biteStartRange && attackTimer >= enemy.attackCooldown && FacingPlayer())
+        {
+            enemy.StartCoroutine(Bite());
         }
         else
         {
@@ -90,19 +95,51 @@ public class AttackState : BaseState
     {
         Vector3 direction = enemy.Player.transform.position - enemy.transform.position;
         direction.y = 0f;
-        return Vector3.Angle(enemy.transform.forward, direction) < 30f;
+        return Vector3.Angle(enemy.transform.forward, direction) < 45f;
+    }
+
+    // During the bite the crocodile surges after the player (faster than they can swim) and keeps facing them
+    private void Lunge()
+    {
+        Vector3 target = enemy.Player.transform.position;
+        Vector3 toPlayer = target - enemy.transform.position;
+        toPlayer.y = 0f;
+        float flat = toPlayer.magnitude;
+
+        // turn quickly towards the prey
+        if (toPlayer.sqrMagnitude > 0.001f)
+            enemy.transform.rotation = Quaternion.Slerp(enemy.transform.rotation, Quaternion.LookRotation(toPlayer), enemy.turnSpeed * 2.5f * Time.deltaTime);
+
+        // close the gap, stopping with the jaws at the player
+        float stopAt = enemy.attackRange * 0.5f;
+        if (flat > stopAt && enemy.Agent.isOnNavMesh)
+        {
+            float step = Mathf.Min(enemy.biteLungeSpeed * Time.deltaTime, flat - stopAt);
+            enemy.Agent.Move(toPlayer / flat * step);
+        }
     }
 
     private IEnumerator Bite()
     {
         biting = true;
         attackTimer = 0f;
+        enemy.Agent.isStopped = true;
         enemy.SetAnimTrigger("Attack");
 
-        yield return new WaitForSeconds(enemy.biteHitDelay);
+        // the jaws snap shut at biteHitDelay; the bite counts if the player was in reach
+        // at any moment during the last part of the snap (not only on the exact frame)
+        float reach = enemy.attackRange * enemy.biteReach;
+        float snapWindow = Mathf.Min(0.3f, enemy.biteHitDelay * 0.5f);
+        bool inReach = false;
+        for (float t = 0f; t < enemy.biteHitDelay; t += Time.deltaTime)
+        {
+            if (enemy.IsStunned || enemy.IsDead) break;
+            if (t >= enemy.biteHitDelay - snapWindow && enemy.DistanceToPlayer() <= reach) inReach = true;
+            yield return null;
+        }
 
-        // cancel if interrupted mid-bite, or the player already got out of reach
-        if (!enemy.IsStunned && !enemy.IsDead && !enemy.PlayerHidden && enemy.DistanceToPlayer() <= enemy.attackRange * 1.2f)
+        // cancel if interrupted mid-bite, or the player got out of reach / hid
+        if (!enemy.IsStunned && !enemy.IsDead && !enemy.PlayerHidden && (inReach || enemy.DistanceToPlayer() <= reach))
             HitPlayer();
 
         yield return new WaitForSeconds(0.3f);
@@ -112,8 +149,17 @@ public class AttackState : BaseState
     private void HitPlayer()
     {
         GameObject player = enemy.Player;
-        // Any script on the player with a public TakeDamage(int) method receives the bite
-        player.SendMessage("TakeDamage", enemy.biteDamage, SendMessageOptions.DontRequireReceiver);
+        if (player.TryGetComponent(out PlayerHealth health))
+        {
+            // PlayerHealth knows who bit, so a killing bite can start the last-stand QTE with this crocodile
+            health.TakeDamage(enemy.biteDamage, enemy);
+            if (health.IsDead) return;   // no knockback push once the player is down
+        }
+        else
+        {
+            // Any other script with a public TakeDamage(int) method still receives the bite
+            player.SendMessage("TakeDamage", enemy.biteDamage, SendMessageOptions.DontRequireReceiver);
+        }
 
         if (player.TryGetComponent(out Rigidbody rb))
         {

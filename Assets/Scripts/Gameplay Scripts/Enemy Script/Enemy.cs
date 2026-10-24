@@ -49,12 +49,20 @@ public class Enemy : MonoBehaviour
 
     public bool IsStunned { get; private set; }
     public bool IsDead { get; private set; }
+    // Held by a scripted moment (last-stand QTE): no AI, no NavMesh, the scene moves and animates it
+    public bool IsHeld { get; private set; }
 
     [Header("Bite Attack")]
     public float attackRange = 3f;      // flat distance from the alligator's centre to the player
     public float attackCooldown = 1.5f;
     public float biteHitDelay = 0.5f;   // time from the start of the Attack animation to the jaws closing
     public int biteDamage = 1;
+    [Tooltip("Speed (m/s) the crocodile surges forward during a bite. Faster than the player swims (3), so a fleeing swimmer gets caught.")]
+    public float biteLungeSpeed = 6.5f;
+    [Tooltip("The bite lands if the player is within attackRange x this when the jaws close.")]
+    public float biteReach = 1.5f;
+    [Tooltip("Start the bite already at attackRange x this when chasing (the lunge covers the gap).")]
+    public float biteStartRange = 1.6f;
     public float knockbackForce = 6f;
 
     void Start()
@@ -78,7 +86,7 @@ public class Enemy : MonoBehaviour
 
     void Update()
     {
-        if (IsDead || stateMachine == null || stateMachine.activeState == null) return;
+        if (IsDead || IsHeld || stateMachine == null || stateMachine.activeState == null) return;
 
         currentState = stateMachine.activeState.ToString();
 
@@ -106,7 +114,7 @@ public class Enemy : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (IsDead) return;
+        if (IsDead || IsHeld) return;
 
         Debug.Log(damage);
         health -= damage;
@@ -140,7 +148,7 @@ public class Enemy : MonoBehaviour
     // A thrown item (coconut) hit it: pushed back, stunned, then straight back to chasing
     public void HitByThrow(Vector3 direction)
     {
-        if (IsDead) return;
+        if (IsDead || IsHeld) return;
 
         if (hitStun != null) StopCoroutine(hitStun);
         hitStun = StartCoroutine(ThrowStun(direction));
@@ -173,6 +181,46 @@ public class Enemy : MonoBehaviour
         hitStun = null;
         if (player != null) LastKnowPos = player.transform.position;
         stateMachine.ChangeState(GetAttackState());
+    }
+
+    // Freeze the AI and take it off the NavMesh so a scripted moment can move it freely
+    public void Hold()
+    {
+        if (IsHeld) return;
+        IsHeld = true;
+        IsStunned = true;   // StateMachine skips Perform while stunned
+        StopAllCoroutines();
+        hitStun = null;
+        if (agent != null && agent.enabled)
+        {
+            if (agent.isOnNavMesh) { agent.isStopped = true; agent.ResetPath(); }
+            agent.enabled = false;
+        }
+    }
+
+    // Back to normal AI from where it is now
+    public void Release()
+    {
+        if (!IsHeld) return;
+        IsHeld = false;
+        IsStunned = false;
+        if (agent != null)
+        {
+            agent.enabled = true;
+            if (agent.isOnNavMesh) { agent.Warp(transform.position); agent.isStopped = false; }
+        }
+        if (Animator != null) Animator.speed = 1f;
+        if (player != null) LastKnowPos = player.transform.position;
+        if (stateMachine != null) stateMachine.ChangeState(new SearchState());
+    }
+
+    // Kicked out of the map: gone for good (the caller flies it away, then destroys it)
+    public void KnockedOut()
+    {
+        Hold();
+        IsDead = true;
+        if (stateMachine != null) stateMachine.enabled = false;
+        foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
     }
 
     private IEnumerator DeathAnimation()

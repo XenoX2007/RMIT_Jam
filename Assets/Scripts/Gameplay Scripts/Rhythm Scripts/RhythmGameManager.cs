@@ -14,6 +14,9 @@ public class RhythmGameManager : MonoBehaviour
     [Header("Song")]
     [Tooltip("Optional. Leave the clip empty to play without music.")]
     [SerializeField] AudioSource music;
+    [Tooltip("On: nhạc chỉ phát khi đánh trúng nốt, miss / bấm sai thì nhạc dừng, đánh trúng lại thì phát tiếp.\nOff: nhạc phát liên tục từ lúc GO!")]
+    [SerializeField] bool musicOnlyWhileHitting = true;
+    [SerializeField, Range(0f, 1f)] float musicVolume = 0.8f;
     [SerializeField] float bpm = 110f;
     [Tooltip("Seconds into the clip where the first beat lands.")]
     [SerializeField] float firstBeatOffset = 0f;
@@ -57,6 +60,9 @@ public class RhythmGameManager : MonoBehaviour
     [SerializeField] TMP_Text resultText;
     [SerializeField] float resultDelay = 1.5f;
     [SerializeField] string menuScene = "MainMenu";
+    [Tooltip("Thắng boss: mờ đen rồi chuyển sang cutscene kết thúc này. Để trống thì hiện bảng kết quả như cũ.")]
+    [SerializeField] string winScene = "BossDefeat";
+    [SerializeField] float winFadeTime = 1.2f;
 
     readonly List<RhythmNote> activeNotes = new List<RhythmNote>();
     double songTime;
@@ -99,7 +105,7 @@ public class RhythmGameManager : MonoBehaviour
         if (!musicStarted && songTime >= 0)
         {
             musicStarted = true;
-            if (music != null && music.clip != null)
+            if (!musicOnlyWhileHitting && music != null && music.clip != null)
                 music.Play();
         }
 
@@ -218,6 +224,7 @@ public class RhythmGameManager : MonoBehaviour
             FlashHitZone(new Color(1f, 0.3f, 0.3f));
             player.Hurt();
             ChangeProgress(-wrongPressPenalty);
+            PauseMusic();
         }
     }
 
@@ -241,6 +248,7 @@ public class RhythmGameManager : MonoBehaviour
         FlashHitZone(note.NoteColor);
 
         player.Attack();
+        PlayMusic();
         boss.Hurt();
         ChangeProgress(gain);
     }
@@ -255,8 +263,26 @@ public class RhythmGameManager : MonoBehaviour
         ShowJudgement(label, new Color(1f, 0.4f, 0.4f));
 
         boss.Attack();
+        PauseMusic();
         player.Hurt();
         ChangeProgress(-missPenalty);
+    }
+
+    // Đánh trúng: nhạc phát (tiếp tục từ chỗ đã dừng)
+    void PlayMusic()
+    {
+        if (!musicOnlyWhileHitting || gameOver || music == null || music.clip == null) return;
+        music.volume = musicVolume * GameAudio.Music;
+        if (music.isPlaying) return;
+        if (music.time > 0f) music.UnPause();
+        else music.Play();
+    }
+
+    // Miss / bấm sai: nhạc dừng
+    void PauseMusic()
+    {
+        if (musicOnlyWhileHitting && music != null && music.isPlaying)
+            music.Pause();
     }
 
     void ChangeProgress(float delta)
@@ -306,6 +332,15 @@ public class RhythmGameManager : MonoBehaviour
     IEnumerator ShowResult(bool playerWon)
     {
         yield return new WaitForSeconds(resultDelay);
+
+        // Thắng: sang cutscene kết thúc thay vì hiện bảng kết quả
+        if (playerWon && !string.IsNullOrEmpty(winScene))
+        {
+            if (centerText != null)
+                centerText.text = "";
+            ScreenFader.FadeAndLoad(this, winScene, winFadeTime);
+            yield break;
+        }
 
         if (centerText != null)
             centerText.text = "";

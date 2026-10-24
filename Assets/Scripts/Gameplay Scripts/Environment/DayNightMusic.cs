@@ -18,6 +18,7 @@ public class DayNightMusic : MonoBehaviour
     float morningWeight;   // 0-1: phần của mỗi bài trong lúc crossfade
     float nightWeight;
     bool night;
+    bool fadedOut;
     Coroutine fade;
 
     void Start()
@@ -33,8 +34,38 @@ public class DayNightMusic : MonoBehaviour
         ApplyVolume();
     }
 
+    // Tắt nhạc dần (ví dụ cutscene muốn phát bài khác). Gọi từ Signal của Timeline được.
+    public void FadeOut()
+    {
+        if (fadedOut) return;
+        fadedOut = true;
+        if (fade != null) StopCoroutine(fade);
+        fade = StartCoroutine(FadeOutRoutine());
+    }
+
+    IEnumerator FadeOutRoutine()
+    {
+        float morningStart = morningWeight, nightStart = nightWeight;
+        for (float t = 0f; t < fadeTime; t += Time.unscaledDeltaTime)
+        {
+            float k = 1f - Mathf.SmoothStep(0f, 1f, t / fadeTime);
+            morningWeight = morningStart * k;
+            nightWeight = nightStart * k;
+            yield return null;
+        }
+        morningWeight = nightWeight = 0f;
+        morningSource.Stop();
+        nightSource.Stop();
+        fade = null;
+    }
+
     void Update()
     {
+        if (fadedOut)
+        {
+            ApplyVolume();
+            return;
+        }
         if (dayNightCycle != null && dayNightCycle.IsNight != night)
         {
             night = dayNightCycle.IsNight;

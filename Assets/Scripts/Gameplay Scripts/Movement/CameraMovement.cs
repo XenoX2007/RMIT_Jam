@@ -20,11 +20,6 @@ public class CameraMovement : MonoBehaviour
     [SerializeField] private float zoomStep = 0.15f;     // fraction of the distance per wheel notch
     [SerializeField] private float zoomSmoothTime = 0.08f;
 
-    [Header("Hiding (jar / barrel)")]
-    [Tooltip("Camera distance while hiding, so the player can watch around the jar.")]
-    [SerializeField] private float hiddenDistance = 9f;
-    [SerializeField] private float hideZoomSmoothTime = 0.35f;
-
     public float Sensitivity { get => sensitivity; set => sensitivity = Mathf.Max(0.01f, value); }
 
     private CinemachineOrbitalFollow orbit;
@@ -76,6 +71,13 @@ public class CameraMovement : MonoBehaviour
             return;
         }
 
+        // Hiding in a jar: HidingCamera has the first-person view and the mouse
+        if (InteractionController.CurrentBarrel != null)
+        {
+            looking = false;
+            return;
+        }
+
         bool held = rightClick.action.IsPressed();
         if (held && !looking) StartLooking(mouse);
         else if (!held && looking) StopLooking();
@@ -94,10 +96,7 @@ public class CameraMovement : MonoBehaviour
         float scroll = mouse.scroll.ReadValue().y;
         if (scroll != 0f)
             targetDistance = Mathf.Clamp(targetDistance * (1f - Mathf.Sign(scroll) * zoomStep), minDistance, maxDistance);
-        // Hiding in a jar: pull back for a wider view of the surroundings, then return to the player's zoom
-        float desired = InteractionController.CurrentBarrel != null ? Mathf.Max(targetDistance, hiddenDistance) : targetDistance;
-        float smooth = Mathf.Abs(desired - orbit.Radius) > 1f ? hideZoomSmoothTime : zoomSmoothTime;
-        orbit.Radius = Mathf.SmoothDamp(orbit.Radius, desired, ref zoomVelocity, smooth);
+        orbit.Radius = Mathf.SmoothDamp(orbit.Radius, targetDistance, ref zoomVelocity, zoomSmoothTime);
     }
 
     private void StartLooking(Mouse mouse)
