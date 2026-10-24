@@ -7,7 +7,9 @@ using UnityEngine.UI;
 
 // Cutscene khi nhặt đủ 3 mảnh:
 // 1. Toàn cảnh góc bản đồ  2. Máy quay bay tới nhân vật chính
-// 3. 3 mảnh bay vòng quanh nhân vật rồi nhập vào người (lóe sáng)
+// 3. 3 mảnh (áo, giày, mũ) bay vòng quanh nhân vật rồi nhập vào người: nhân vật xoay, sáng rực,
+//    đổi sang bộ đồ mới đúng lúc sáng nhất, rồi ánh sáng tắt dần
+
 // 4. Mặt đất rung, máy quay ra sau lưng nhân vật
 // 5. Cá sấu mặc vest trồi lên từ dưới nước rồi gầm  6. Mờ đen -> Boss Fight.
 // Space / Enter / Esc để bỏ qua.
@@ -53,6 +55,17 @@ public class WinCutscene : MonoBehaviour
     [SerializeField] Color flashColor = new Color(1f, 0.85f, 0.35f);
     [SerializeField] float flashIntensity = 12f;
 
+    [Header("Outfit change")]
+    [Tooltip("The character in the new outfit (same spot as Character, switched off at the start).")]
+    [SerializeField] Animator outfitCharacter;
+    [SerializeField] float transformTime = 1.6f;
+    [Tooltip("Full spins during the transformation.")]
+    [SerializeField] int transformTurns = 3;
+    [Tooltip("Point of the transformation (0-1) where the outfit swaps, at the brightest moment.")]
+    [SerializeField, Range(0.1f, 0.9f)] float swapPoint = 0.4f;
+    [Tooltip("How bright the character glows at the peak (HDR, bloom makes it shine).")]
+    [SerializeField] Color glowColor = new Color(3.2f, 2.8f, 1.9f);
+
     [Header("Crocodile")]
     [Tooltip("How far below its final position the crocodile starts (hidden under the river bed).")]
     [SerializeField] float riseDepth = 7f;
@@ -74,6 +87,11 @@ public class WinCutscene : MonoBehaviour
     Light flash;
     AudioSource voice;
     bool ending;
+    Vector3 outfitScale = Vector3.one;
+    ParticleSystem sparkles;
+    MaterialPropertyBlock glowBlock;
+    readonly System.Collections.Generic.Dictionary<Renderer, Color[]> baseColors = new System.Collections.Generic.Dictionary<Renderer, Color[]>();
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
     IEnumerator Start()
     {
@@ -108,9 +126,11 @@ public class WinCutscene : MonoBehaviour
             PlacePieces(k);
         });
 
-        // Nhập vào người + lóe sáng
+        // Nhập vào người: nhân vật bắt đầu xoay, sáng dần lên (trang phục cũ phát sáng)
         Vector3[] startPos = new Vector3[pieces.Length];
         for (int i = 0; i < pieces.Length; i++) startPos[i] = pieces[i].position;
+        Quaternion facing = character.transform.rotation;
+        float spun = 0f;
         yield return Over(combineTime, k =>
         {
             float e = k * k;
@@ -119,11 +139,50 @@ public class WinCutscene : MonoBehaviour
                 pieces[i].position = Vector3.Lerp(startPos[i], Chest(), e);
                 pieces[i].localScale = Vector3.one * pieceScale * (1f - e);
             }
+            spun = transformTurns * 360f * 0.25f * e;
+            character.transform.rotation = Quaternion.AngleAxis(spun, Vector3.up) * facing;
             flash.transform.position = Chest();
             flash.intensity = flashIntensity * e;
+            SetGlow(character, 0.6f * e);
         });
         foreach (Transform piece in pieces) piece.gameObject.SetActive(false);
-        StartCoroutine(Over(1f, k => flash.intensity = flashIntensity * (1f - Smooth(k))));
+
+        // Biến hình: xoay nhanh, sáng rực rồi đổi trang phục đúng lúc sáng nhất (lấp lánh che chỗ đổi),
+        // sau đó ánh sáng tắt dần trên bộ đồ mới và nhân vật xoay chậm lại, dừng đúng hướng cũ
+        float spinStart = spun;
+        float spinEnd = transformTurns * 360f;
+        bool swapped = false;
+        yield return Over(transformTime, k =>
+        {
+            // xoay: nhanh ở giữa, chậm dần về cuối
+            float s = 1f - Mathf.Pow(1f - k, 3f);
+            character.transform.rotation = Quaternion.AngleAxis(Mathf.Lerp(spinStart, spinEnd, s), Vector3.up) * facing;
+
+            // sáng: lên tới đỉnh ở swapPoint rồi tắt dần
+            float glow = k < swapPoint ? Mathf.Lerp(0.6f, 1f, Smooth(k / swapPoint)) : 1f - Smooth((k - swapPoint) / (1f - swapPoint));
+            if (!swapped && k >= swapPoint)
+            {
+                swapped = true;
+                SwapOutfit();
+                Sparkle(90);
+            }
+            SetGlow(character, glow);
+
+            // bộ đồ mới "bật" ra nhẹ
+            if (swapped)
+            {
+                float p = (k - swapPoint) / (1f - swapPoint);
+                float pop = 1f + 0.08f * Mathf.Sin(Mathf.Clamp01(p * 1.5f) * Mathf.PI) * (1f - p);
+                character.transform.localScale = outfitScale * pop;
+            }
+            flash.transform.position = Chest();
+            flash.intensity = flashIntensity * Mathf.Max(glow, k < swapPoint ? 0.6f : 0f);
+            camRot = Quaternion.Slerp(camRot, Quaternion.LookRotation(Chest() - camPos), 0.1f);
+        });
+        character.transform.rotation = facing;
+        character.transform.localScale = outfitScale;
+        SetGlow(character, 0f);
+        flash.intensity = 0f;
 
         // 4. Rung đất, máy quay ra sau lưng nhân vật
         fromPos = camPos;
@@ -239,6 +298,91 @@ public class WinCutscene : MonoBehaviour
         flash.intensity = 0f;
 
         splash = CreateSplash();
+
+        // Bộ đồ mới: ẩn tới lúc biến hình
+        outfitScale = character.transform.localScale;
+        glowBlock = new MaterialPropertyBlock();
+        if (outfitCharacter != null) outfitCharacter.gameObject.SetActive(false);
+        sparkles = CreateSparkles();
+    }
+
+    // Đổi sang nhân vật mặc bộ đồ mới: cùng chỗ, cùng hướng, cùng khung animation
+    void SwapOutfit()
+    {
+        if (outfitCharacter == null) return;
+        Transform from = character.transform, to = outfitCharacter.transform;
+        to.SetPositionAndRotation(from.position, from.rotation);
+        to.localScale = from.localScale;
+        AnimatorStateInfo state = character.GetCurrentAnimatorStateInfo(0);
+        outfitCharacter.gameObject.SetActive(true);
+        outfitCharacter.Play(state.fullPathHash, 0, state.normalizedTime);
+        outfitCharacter.Update(0f);
+        SetGlow(outfitCharacter, 1f);
+        SetGlow(character, 0f);
+        character.gameObject.SetActive(false);
+        character = outfitCharacter;
+    }
+
+    // Làm sáng nhân vật (0 = bình thường, 1 = sáng nhất) bằng cách nâng màu gốc của vật liệu
+    void SetGlow(Animator who, float amount)
+    {
+        if (who == null) return;
+        foreach (Renderer r in who.GetComponentsInChildren<Renderer>())
+        {
+            Material[] mats = r.sharedMaterials;
+            if (!baseColors.TryGetValue(r, out Color[] colors))
+            {
+                colors = new Color[mats.Length];
+                for (int i = 0; i < mats.Length; i++)
+                    colors[i] = mats[i] != null && mats[i].HasProperty(BaseColorId) ? mats[i].GetColor(BaseColorId) : Color.white;
+                baseColors[r] = colors;
+            }
+            for (int i = 0; i < mats.Length; i++)
+            {
+                r.GetPropertyBlock(glowBlock, i);
+                glowBlock.SetColor(BaseColorId, Color.LerpUnclamped(colors[i], glowColor, amount));
+                r.SetPropertyBlock(glowBlock, i);
+            }
+        }
+    }
+
+    void Sparkle(int count)
+    {
+        sparkles.transform.position = Chest();
+        sparkles.Emit(count);
+    }
+
+    ParticleSystem CreateSparkles()
+    {
+        var go = new GameObject("Outfit Sparkles");
+        var ps = go.AddComponent<ParticleSystem>();
+        ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+
+        var main = ps.main;
+        main.playOnAwake = false;
+        main.loop = false;
+        main.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.4f);
+        main.startSpeed = new ParticleSystem.MinMaxCurve(1.5f, 4.5f);
+        main.startSize = new ParticleSystem.MinMaxCurve(0.05f, 0.16f);
+        main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.92f, 0.55f), new Color(1f, 0.6f, 0.25f));
+        main.gravityModifier = -0.15f;   // bay lên nhẹ
+        main.maxParticles = 300;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var emission = ps.emission;
+        emission.rateOverTime = 0f;
+
+        var shape = ps.shape;
+        shape.shapeType = ParticleSystemShapeType.Sphere;
+        shape.radius = 0.35f;
+
+        var size = ps.sizeOverLifetime;
+        size.enabled = true;
+        size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0f));
+
+        var renderer = go.GetComponent<ParticleSystemRenderer>();
+        renderer.material = splashMaterial != null ? splashMaterial : new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+        return ps;
     }
 
     void CreateLetterbox()

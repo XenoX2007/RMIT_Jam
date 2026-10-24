@@ -64,6 +64,12 @@ public class PlayerHealth : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
+        TakeDamage(damage, null);
+    }
+
+    // A crocodile's killing bite starts the last-stand QTE (LastStandQTE) instead of killing right away
+    public void TakeDamage(int damage, Enemy attacker)
+    {
         if (IsDead || damage <= 0) return;
         if (Time.time - lastHitTime < invulnerableTime) return;
 
@@ -71,7 +77,26 @@ public class PlayerHealth : MonoBehaviour
         Health = Mathf.Max(0, Health - damage);
         HealthChanged?.Invoke(Health, maxHealth);
 
-        if (Health == 0) Die();
+        if (Health > 0) return;
+        if (attacker != null && TryGetComponent(out LastStandQTE lastStand) && lastStand.enabled && lastStand.Begin(attacker))
+            return;   // the QTE decides: Revive() on success, Kill() on failure
+        Die();
+    }
+
+    // Back up from 0 HP (won the last stand), briefly safe from the next bite
+    public void Revive(int health, float extraSafeTime = 0f)
+    {
+        Health = Mathf.Clamp(health, 1, maxHealth);
+        lastHitTime = Time.time + extraSafeTime;
+        HealthChanged?.Invoke(Health, maxHealth);
+    }
+
+    // Lost the last stand
+    public void Kill()
+    {
+        Health = 0;
+        HealthChanged?.Invoke(Health, maxHealth);
+        Die();
     }
 
     public void Heal(int amount)

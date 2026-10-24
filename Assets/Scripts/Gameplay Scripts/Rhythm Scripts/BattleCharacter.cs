@@ -49,8 +49,11 @@ public class BattleCharacter : MonoBehaviour
     bool defeated;
     Coroutine currentAction;
 
+    SingerPose singer;   // tùy chọn: tư thế hát khi đánh trúng nốt
+
     void Awake()
     {
+        singer = GetComponentInChildren<SingerPose>();
         homePosition = transform.position;
         homeRotation = transform.rotation;
         bobPhase = Random.Range(0f, Mathf.PI * 2f);
@@ -75,12 +78,14 @@ public class BattleCharacter : MonoBehaviour
     public void Attack()
     {
         if (defeated) return;
+        if (singer != null) singer.Sing();
         PlayAction(AttackRoutine());
     }
 
     public void Hurt()
     {
         if (defeated) return;
+        if (singer != null) singer.Stop();
         PlayAction(HurtRoutine());
     }
 
@@ -115,6 +120,7 @@ public class BattleCharacter : MonoBehaviour
     public void Defeat()
     {
         if (defeated) return;
+        if (singer != null) singer.Stop();
         defeated = true;
         PlayAction(DefeatRoutine());
     }

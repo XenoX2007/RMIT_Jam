@@ -49,6 +49,8 @@ public class Enemy : MonoBehaviour
 
     public bool IsStunned { get; private set; }
     public bool IsDead { get; private set; }
+    // Held by a scripted moment (last-stand QTE): no AI, no NavMesh, the scene moves and animates it
+    public bool IsHeld { get; private set; }
 
     [Header("Bite Attack")]
     public float attackRange = 3f;      // flat distance from the alligator's centre to the player
@@ -78,7 +80,7 @@ public class Enemy : MonoBehaviour
 
     void Update()
     {
-        if (IsDead || stateMachine == null || stateMachine.activeState == null) return;
+        if (IsDead || IsHeld || stateMachine == null || stateMachine.activeState == null) return;
 
         currentState = stateMachine.activeState.ToString();
 
@@ -106,7 +108,7 @@ public class Enemy : MonoBehaviour
 
     public void TakeDamage(int damage)
     {
-        if (IsDead) return;
+        if (IsDead || IsHeld) return;
 
         Debug.Log(damage);
         health -= damage;
@@ -140,7 +142,7 @@ public class Enemy : MonoBehaviour
     // A thrown item (coconut) hit it: pushed back, stunned, then straight back to chasing
     public void HitByThrow(Vector3 direction)
     {
-        if (IsDead) return;
+        if (IsDead || IsHeld) return;
 
         if (hitStun != null) StopCoroutine(hitStun);
         hitStun = StartCoroutine(ThrowStun(direction));
@@ -173,6 +175,46 @@ public class Enemy : MonoBehaviour
         hitStun = null;
         if (player != null) LastKnowPos = player.transform.position;
         stateMachine.ChangeState(GetAttackState());
+    }
+
+    // Freeze the AI and take it off the NavMesh so a scripted moment can move it freely
+    public void Hold()
+    {
+        if (IsHeld) return;
+        IsHeld = true;
+        IsStunned = true;   // StateMachine skips Perform while stunned
+        StopAllCoroutines();
+        hitStun = null;
+        if (agent != null && agent.enabled)
+        {
+            if (agent.isOnNavMesh) { agent.isStopped = true; agent.ResetPath(); }
+            agent.enabled = false;
+        }
+    }
+
+    // Back to normal AI from where it is now
+    public void Release()
+    {
+        if (!IsHeld) return;
+        IsHeld = false;
+        IsStunned = false;
+        if (agent != null)
+        {
+            agent.enabled = true;
+            if (agent.isOnNavMesh) { agent.Warp(transform.position); agent.isStopped = false; }
+        }
+        if (Animator != null) Animator.speed = 1f;
+        if (player != null) LastKnowPos = player.transform.position;
+        if (stateMachine != null) stateMachine.ChangeState(new SearchState());
+    }
+
+    // Kicked out of the map: gone for good (the caller flies it away, then destroys it)
+    public void KnockedOut()
+    {
+        Hold();
+        IsDead = true;
+        if (stateMachine != null) stateMachine.enabled = false;
+        foreach (Collider c in GetComponentsInChildren<Collider>()) c.enabled = false;
     }
 
     private IEnumerator DeathAnimation()

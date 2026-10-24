@@ -112,8 +112,17 @@ public class AttackState : BaseState
     private void HitPlayer()
     {
         GameObject player = enemy.Player;
-        // Any script on the player with a public TakeDamage(int) method receives the bite
-        player.SendMessage("TakeDamage", enemy.biteDamage, SendMessageOptions.DontRequireReceiver);
+        if (player.TryGetComponent(out PlayerHealth health))
+        {
+            // PlayerHealth knows who bit, so a killing bite can start the last-stand QTE with this crocodile
+            health.TakeDamage(enemy.biteDamage, enemy);
+            if (health.IsDead) return;   // no knockback push once the player is down
+        }
+        else
+        {
+            // Any other script with a public TakeDamage(int) method still receives the bite
+            player.SendMessage("TakeDamage", enemy.biteDamage, SendMessageOptions.DontRequireReceiver);
+        }
 
         if (player.TryGetComponent(out Rigidbody rb))
         {
